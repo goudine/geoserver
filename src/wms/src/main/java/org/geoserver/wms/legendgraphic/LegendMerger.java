@@ -11,7 +11,9 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
+import java.awt.image.PixelGrabber;
 import java.awt.image.RenderedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -469,10 +471,22 @@ public class LegendMerger {
             int rowNumber = (int) Math.ceil((float) nodes.size() / colNumber);
             int cn = 0;
             int rc = 0;
+            boolean colourPresent = false;
             for (int i = 0; i < nodes.size(); i++) {
                 if (rc < rowNumber) {
-                    legendMatrix[cn].addNode(nodes.get(i));
-                    rc++;
+                    // check for presence of colour (ie. non-empty legend row)
+                    try{
+                        colourPresent = checkColour(nodes.get(i));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    // if colour is detected, then draw
+                    if(colourPresent){
+                        legendMatrix[cn].addNode(nodes.get(i));
+                        rc++;
+                    }
                 } else {
                     i--;
                     cn++;
@@ -483,6 +497,30 @@ public class LegendMerger {
         }
 
         return legendMatrix;
+    }
+
+    /**
+     * Checks the pixels in a given row for presence of colour
+     *
+     * @param img given row of the legend
+     * @return false if no colours are detected
+     *
+     */
+    public static boolean checkColour(BufferedImage img) throws IOException, InterruptedException {
+        int w = img.getWidth(null);
+        int h = img.getHeight(null);
+        int[] pixels = new int[w * h];
+        PixelGrabber pg = new PixelGrabber(img, 0, 0, w, h, pixels, 0, w);
+        pg.grabPixels();
+        boolean colourPresent = false;
+        for (int pixel : pixels) {
+            Color color = new Color(pixel);
+            if (color.getAlpha() == 0 || color.getRGB() != Color.WHITE.getRGB()) {
+                colourPresent = true;
+                break;
+            }
+        }
+        return colourPresent;
     }
 
     /**
