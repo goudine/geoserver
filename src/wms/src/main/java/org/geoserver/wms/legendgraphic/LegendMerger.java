@@ -475,14 +475,7 @@ public class LegendMerger {
             for (int i = 0; i < nodes.size(); i++) {
                 if (rc < rowNumber) {
                     // check for presence of colour (ie. non-empty legend row)
-                    try{
-                        colourPresent = checkColour(nodes.get(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    // if colour is detected, then draw
+                    colourPresent = checkColour(nodes.get(i));
                     if(colourPresent){
                         legendMatrix[cn].addNode(nodes.get(i));
                         rc++;
@@ -506,13 +499,14 @@ public class LegendMerger {
      * @return false if no colours are detected
      *
      */
-    public static boolean checkColour(BufferedImage img) throws IOException, InterruptedException {
+    public static boolean checkColour(BufferedImage img) throws InterruptedException {
         int w = img.getWidth(null);
         int h = img.getHeight(null);
         int[] pixels = new int[w * h];
         PixelGrabber pg = new PixelGrabber(img, 0, 0, w, h, pixels, 0, w);
         pg.grabPixels();
         boolean colourPresent = false;
+
         for (int pixel : pixels) {
             Color color = new Color(pixel);
             if (color.getAlpha() == 0 || color.getRGB() != Color.WHITE.getRGB()) {
