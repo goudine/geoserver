@@ -9,16 +9,21 @@ import static org.restlet.data.Status.CLIENT_ERROR_BAD_REQUEST;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.base.Throwables;
 import org.geogig.geoserver.config.PostgresConfigBean;
+import org.geogig.geoserver.config.RepositoryInfo;
 import org.geogig.geoserver.config.RepositoryManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.repository.Repository;
+import org.locationtech.geogig.repository.RepositoryResolver;
 import org.locationtech.geogig.rest.RestletException;
 import org.restlet.data.Form;
 import org.restlet.data.MediaType;
@@ -36,9 +41,9 @@ import com.google.common.base.Optional;
  * and build a GeoGIG repository form them, by converting the request into a
  * {@link org.locationtech.geogig.repository.Hints Hints}.
  */
-class InitRequestHandler {
+class AddRepoRequestHandler {
 
-    private static final InitRequestHandler INSTANCE = new InitRequestHandler();
+    private static final AddRepoRequestHandler INSTANCE = new AddRepoRequestHandler();
 
     static final String REPO_ATTR = "repository";
 
@@ -243,4 +248,38 @@ class InitRequestHandler {
         // now build the repo with the Hints
         return Optional.fromNullable(RepositoryManager.get().createRepo(hints));
     }
+
+    static Optional<Repository> importGeogig(Request request) {
+
+        try {
+            // build URI
+            Hints hint = INSTANCE.createHintsFromRequest(request);
+            // now build the repo with the Hints
+            RepositoryInfo repoInfo = new RepositoryInfo();
+
+            //        Optional<URI> repoUri = geogig.command(ResolveGeogigURI.class).call();
+            //        Preconditions.checkState(repoUri.isPresent(),
+            //                "Unable to resolve URI of imported repository.");
+
+            // set the repo location from the URI
+
+            URI uri = new URI((String) hint.get(Hints.REPOSITORY_URL).get());
+            repoInfo.setLocation(uri);
+
+            // check to see if repo is initialized
+            RepositoryResolver repoResolver = RepositoryResolver.lookup(uri);
+            if(!repoResolver.repoExists(uri)) {
+                return Optional.absent();
+            }
+
+            // save the repo, this will set a UUID
+            RepositoryManager.get().save(repoInfo);
+
+            return Optional.of(RepositoryManager.get().getRepository(repoInfo.getId()));
+        } catch (IOException | URISyntaxException e) {
+            Throwables.propagate(e);
+        }
+        return Optional.absent();
+    }
+
 }
