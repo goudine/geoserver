@@ -139,7 +139,6 @@ public class GeoServerRepositoryProvider implements RepositoryProvider {
         return false;
     }
 
-    // maybe want to call `isAddRequest` somewhere here??
     @Override
     public Optional<Repository> getGeogig(Request request) {
         Optional<String> repositoryName = getRepositoryName(request);

@@ -107,6 +107,7 @@ public class GeogigDispatcher extends AbstractController {
         router.attach("/repos/", RepositoryListResource.class);
         router.attach("/repos.{extension}/", RepositoryListResource.class);
         router.attach("/repos/{repository}/importExistingRepo", ImportRepoCommandResource.class);
+        router.attach("/repos/{repository}/importExistingRepo.{extension}", ImportRepoCommandResource.class);
 
         router.attach("/tasks.{extension}", TaskStatusResource.class);
         router.attach("/tasks", TaskStatusResource.class);

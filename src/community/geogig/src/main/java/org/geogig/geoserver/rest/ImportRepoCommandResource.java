@@ -1,8 +1,12 @@
 package org.geogig.geoserver.rest;
 
+import com.google.common.base.Preconditions;
+import com.noelios.restlet.http.HttpRequest;
 import org.geogig.geoserver.config.RepositoryInfo;
 import org.geogig.geoserver.config.RepositoryManager;
 import org.locationtech.geogig.rest.repository.CommandResource;
+import org.restlet.data.Form;
+import org.restlet.data.MediaType;
 import org.restlet.data.Request;
 import org.restlet.data.Status;
 import org.restlet.resource.Representation;
@@ -12,12 +16,13 @@ import java.io.File;
 import java.net.URI;
 import java.util.Map;
 
+import static org.locationtech.geogig.web.api.RESTUtils.getGeogig;
+
 /**
  * Created by agoudine on 2017-02-09.
  */
 public class ImportRepoCommandResource extends CommandResource{
 
-    // This is the `InitCommandResource` code, needs to be changed
     @Override
     protected String getCommandName() {
         return "importExistingRepo";
@@ -26,38 +31,46 @@ public class ImportRepoCommandResource extends CommandResource{
     @Override
     protected Representation runCommand(Variant variant, Request request) {
 
-        Representation representation = super.runCommand(variant, request);
-        Map<String, String> requestParameters = ImportRequestHandler.getRequestParameters(request);
-        saveRepository(requestParameters);
+        // get the repo URI
+        URI pgURI = ImportRequestHandler.getURI(request);
 
-        //InitRequestHandler requestHandler = new InitRequestHandler();
+        // save the repository
+        saveRepository(pgURI);
 
-        return representation;
+        // grab new variant  [NOT SURE IF NECESSARY]
+        //Variant newVariant = getPreferredVariant();
+
+        // get the correct content type
+        String contentType = ((HttpRequest)request).getHttpCall().getRequestHeaders().getValues("Content-Type");
+
+        // create new MT object in order to set MediaType in Variant
+        //MediaType requestType = new MediaType(contentType);
+        //newVariant.setMediaType(requestType);
+        MediaType requestType = new MediaType(contentType);
+        variant.setMediaType(requestType);
+
+        // get the options (metadata)
+        Form options = getOptions();
+
+        // set media type
+        MediaType format = resolveFormat(options, variant);
+
+        // create representation
+//        geogig = getGeogig(request);
+//        RestletContext ctx = new RestletContext(geogig.get(), request);
+//        Representation representation = ctx.getRepresentation(format, (String) null);
+
+        return null;
     }
 
-    private RepositoryInfo saveRepository(Map<String, String> requestParameters) {
-        // repo was just created, need to register it with an ID in the manager
+    private RepositoryInfo saveRepository(URI pgURI) {
+
         // create a RepositoryInfo object
         RepositoryInfo repoInfo = new RepositoryInfo();
-        URI location = geogig.get().getLocation().normalize();
 
-        // do something that takes request and gives us a URI
-        // set the URI on the repo info --> repoInfo.setLocation(URI)
-        URI pgURI;
-        if (requestParameters.containsKey(ImportRequestHandler.DB_NAME)) {
-            // this is a PG repo
-            pgURI = URI.create("postgresql://"+"see the actual URI"+ImportRequestHandler.DB_HOST);
-        } else {
-            pgURI = URI.create("other URI");
-        }
-
-        if ("file".equals(location.getScheme())) {
-            // need the parent
-            File parentDir = new File(location).getParentFile();
-            location = parentDir.toURI().normalize();
-        }
-        // set the URI
+        // set the repo location from the URI
         repoInfo.setLocation(pgURI);
+
         // save the repo, this will set a UUID
         return RepositoryManager.get().save(repoInfo);
     }

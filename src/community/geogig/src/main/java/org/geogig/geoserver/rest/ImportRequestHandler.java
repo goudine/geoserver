@@ -7,18 +7,16 @@ package org.geogig.geoserver.rest;
 import static org.locationtech.geogig.web.api.RESTUtils.getStringAttribute;
 import static org.restlet.data.Status.CLIENT_ERROR_BAD_REQUEST;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.geogig.geoserver.config.PostgresConfigBean;
-import org.geogig.geoserver.config.RepositoryManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.locationtech.geogig.repository.Hints;
-import org.locationtech.geogig.repository.Repository;
 import org.locationtech.geogig.rest.RestletException;
 import org.restlet.data.Form;
 import org.restlet.data.MediaType;
@@ -43,10 +41,6 @@ class ImportRequestHandler {
     static final String REPO_ATTR = "repository";
 
     // Form parameter names
-    /**
-     * Directory option for Parent Directory.
-     */
-    static final String DIR_PARENT_DIR = "parentDirectory";
     /**
      * Database option for Host.
      */
@@ -106,7 +100,6 @@ class ImportRequestHandler {
      * @param json   JSONObject from a Request with parameters in a JSON payload.
      */
     private static void addParameters(Map<String, String> params, JSONObject json) {
-        addParameter(params, DIR_PARENT_DIR, json.optString(DIR_PARENT_DIR, null));
         addParameter(params, DB_HOST, json.optString(DB_HOST, null));
         addParameter(params, DB_PORT, json.optString(DB_PORT, null));
         addParameter(params, DB_NAME, json.optString(DB_NAME, null));
@@ -127,7 +120,6 @@ class ImportRequestHandler {
      * @param form   URL encoded Form from a Request with parameters encoded.
      */
     private static void addParameters(Map<String, String> params, Form form) {
-        addParameter(params, DIR_PARENT_DIR, form.getFirstValue(DIR_PARENT_DIR, null));
         addParameter(params, DB_HOST, form.getFirstValue(DB_HOST, null));
         addParameter(params, DB_PORT, form.getFirstValue(DB_PORT, null));
         addParameter(params, DB_NAME, form.getFirstValue(DB_NAME, null));
@@ -176,25 +168,31 @@ class ImportRequestHandler {
         return params;
     }
 
-    private void updateHintsWithParams(Hints hints, Map<String, String> params) {
+    public static URI createURIwithParams(String repoName, Map<String, String> params) {
+
         // get parameters
-        final String parentDir = params.get(DIR_PARENT_DIR);
         final String dbHost = params.get(DB_HOST);
         final String dbPort = params.get(DB_PORT);
         final String dbName = params.get(DB_NAME);
         final String dbSchema = params.get(DB_SCHEMA);
         final String dbUser = params.get(DB_USER);
         final String dbPassword = params.get(DB_PASSWORD);
-        // use parent directory if present
-        if (parentDir != null) {
-            final String leafDir = UUID.randomUUID().toString();
-            final String uri = new File(parentDir, leafDir).getAbsoluteFile().toURI().toString();
-            hints.set(Hints.REPOSITORY_URL, uri);
-        } else if (dbName != null && dbPassword != null) {
+
+//        String pgURI = "what/is/it";
+        URI pgURI = null;
+//        try {
+//            pgURI = new URI("");
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//        }
+
+        if (dbName != null && dbPassword != null) {
+
             // try to build a URI from the db parameters
             PostgresConfigBean bean = new PostgresConfigBean();
             bean.setDatabase(dbName);
             bean.setPassword(dbPassword);
+
             // these have defaults in PostgresConfigBean, only overwrite defaults if present
             if (null != dbSchema) {
                 bean.setSchema(dbSchema);
@@ -210,37 +208,35 @@ class ImportRequestHandler {
                     Integer portInt = Integer.parseInt(dbPort);
                     bean.setPort(portInt);
                 } catch (Exception ex) {
-                    // use the defaukt in PostgresConfigBean
+                    // use the default in PostgresConfigBean
                 }
             }
-            final String uri = bean.buildUriForRepo(
-                    hints.get(Hints.REPOSITORY_NAME).get().toString()).toString();
-            hints.set(Hints.REPOSITORY_URL, uri);
+
+//            final String uri = bean.buildUriForRepo(hints.get(Hints.REPOSITORY_NAME).get().toString()).toString();
+//            hints.set(Hints.REPOSITORY_URL, uri);
+
+            pgURI = bean.buildUriForRepo(repoName);
         }
+        return pgURI;
     }
 
-    @VisibleForTesting
-    Hints createHintsFromRequest(Request request) {
-        // get the repository name from the request
-        final Optional<String> nameOptional = Optional.fromNullable(getStringAttribute(request,
-                REPO_ATTR));
-        if (!nameOptional.isPresent()) {
-            // no repo name provided
-            throw new RestletException(String.format(
-                    "Cannot create GeoGIG repository. Missing '%s' resource", REPO_ATTR),
-                    Status.CLIENT_ERROR_BAD_REQUEST);
-        }
-        final String repoName = nameOptional.get();
-        final Hints hints = new Hints();
-        hints.set(Hints.REPOSITORY_NAME, repoName);
-        // try to build the Repo URI from any Request parameters.
-        updateHintsWithParams(hints, getRequestParameters(request));
-        return hints;
-    }
+    static URI getURI(Request request) {
 
-    static Optional<Repository> createGeoGIG(Request request) {
-        final Hints hints = INSTANCE.createHintsFromRequest(request);
-        // now build the repo with the Hints
-        return Optional.fromNullable(RepositoryManager.get().createRepo(hints));
+        // build the URI
+//        String pgURI = "what/is/it";
+        URI pgURI = null;
+//        try {
+//            pgURI = new URI(pgURI);
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//        }
+
+        // get the repository name
+        Map<String, Object> attributeMap = request.getAttributes();
+        String repoName = (String) attributeMap.get("repository");
+
+        pgURI = createURIwithParams(repoName, getRequestParameters(request));
+
+        return pgURI;
     }
 }
