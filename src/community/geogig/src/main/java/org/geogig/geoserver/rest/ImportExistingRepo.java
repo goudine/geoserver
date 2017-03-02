@@ -2,13 +2,9 @@ package org.geogig.geoserver.rest;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import org.geogig.geoserver.config.RepositoryInfo;
-import org.geogig.geoserver.config.RepositoryManager;
 import org.locationtech.geogig.plumbing.ResolveGeogigURI;
 import org.locationtech.geogig.plumbing.ResolveRepositoryName;
-import org.locationtech.geogig.porcelain.InitOp;
 import org.locationtech.geogig.repository.Context;
-import org.locationtech.geogig.repository.Repository;
 import org.locationtech.geogig.repository.RepositoryConnectionException;
 import org.locationtech.geogig.repository.RepositoryResolver;
 import org.locationtech.geogig.rest.repository.RepositoryProvider;
@@ -54,16 +50,9 @@ public class ImportExistingRepo extends AbstractWebAPICommand {
         Preconditions.checkState(repoUri.isPresent(),
                 "Unable to resolve URI of imported repository.");
 
-        // run the logic from import repo ... (ie saverepo)
-        // create a RepositoryInfo object
-
-
         try {
-
-
             final String repositoryName = RepositoryResolver.load(repoUri.get())
                     .command(ResolveRepositoryName.class).call();
-
             context.setResponseContent(new CommandResponse() {
                 @Override
                 public void write(ResponseWriter out) throws Exception {
@@ -79,6 +68,4 @@ public class ImportExistingRepo extends AbstractWebAPICommand {
                     "Repository was imported, but was unable to connect to it immediately.");
         }
     }
-
-
 }

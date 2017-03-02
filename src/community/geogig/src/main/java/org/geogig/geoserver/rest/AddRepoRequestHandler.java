@@ -4,17 +4,8 @@
  */
 package org.geogig.geoserver.rest;
 
-import static org.locationtech.geogig.web.api.RESTUtils.getStringAttribute;
-import static org.restlet.data.Status.CLIENT_ERROR_BAD_REQUEST;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import org.geogig.geoserver.config.PostgresConfigBean;
 import org.geogig.geoserver.config.RepositoryInfo;
@@ -32,8 +23,16 @@ import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.resource.Representation;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.locationtech.geogig.web.api.RESTUtils.getStringAttribute;
+import static org.restlet.data.Status.CLIENT_ERROR_BAD_REQUEST;
 
 /**
  * Utility for handling GeoGIG repository init requests. This class will pull repository creation
@@ -215,7 +214,7 @@ class AddRepoRequestHandler {
                     Integer portInt = Integer.parseInt(dbPort);
                     bean.setPort(portInt);
                 } catch (Exception ex) {
-                    // use the defaukt in PostgresConfigBean
+                    // use the default in PostgresConfigBean
                 }
             }
             final String uri = bean.buildUriForRepo(
@@ -254,15 +253,11 @@ class AddRepoRequestHandler {
         try {
             // build URI
             Hints hint = INSTANCE.createHintsFromRequest(request);
+
             // now build the repo with the Hints
             RepositoryInfo repoInfo = new RepositoryInfo();
 
-            //        Optional<URI> repoUri = geogig.command(ResolveGeogigURI.class).call();
-            //        Preconditions.checkState(repoUri.isPresent(),
-            //                "Unable to resolve URI of imported repository.");
-
             // set the repo location from the URI
-
             URI uri = new URI((String) hint.get(Hints.REPOSITORY_URL).get());
             repoInfo.setLocation(uri);
 

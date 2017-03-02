@@ -42,7 +42,9 @@ public class GeoServerRepositoryProvider implements RepositoryProvider {
      */
     public static final String INIT_CMD = "init";
 
-    // add java doc
+    /**
+     * Import Existing Repository command string.
+     */
     public static final String IMPORT_CMD = "importExistingRepo";
 
     private Optional<String> getRepositoryName(Request request) {
@@ -143,7 +145,7 @@ public class GeoServerRepositoryProvider implements RepositoryProvider {
     }
 
     private boolean isImportRequest(Request request) {
-        // if the request is a POST, and the request path ends in "importExistingRepo", it's an IMPORT request.
+        // if the request is a POST, and the request path ends in "importExistingRepo"
         if (Method.POST.equals(request.getMethod())) {
             Map<String, Object> attributes = request.getAttributes();
             if (attributes != null && attributes.containsKey("command")) {
@@ -155,8 +157,6 @@ public class GeoServerRepositoryProvider implements RepositoryProvider {
         }
         return false;
     }
-
-
 
     @Override
     public Optional<Repository> getGeogig(Request request) {
@@ -171,6 +171,7 @@ public class GeoServerRepositoryProvider implements RepositoryProvider {
                 // special handling of INIT requests
                 geogig = AddRepoRequestHandler.createGeoGIG(request);
             } else if (isImportRequest(request)){
+                // handles IMPORT requests
                 geogig = AddRepoRequestHandler.importGeogig(request);
             }
         }

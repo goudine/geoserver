@@ -60,7 +60,7 @@ public class GeogigDispatcher extends AbstractController {
     private GeoServerRepositoryProvider repositoryProvider;
 
     /**
-     * converter for turning servlet requests into resetlet requests.
+     * converter for turning servlet requests into restlet requests.
      */
     private ServletConverter converter;
 
